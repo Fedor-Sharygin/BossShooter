@@ -6,6 +6,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "../FPSMovement.h"
 #include "Kismet/GameplayStatics.h"
+#include "AIController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ABossSphere::ABossSphere()
@@ -18,13 +20,25 @@ ABossSphere::ABossSphere()
 	DamageSphere->SetSphereRadius(350.f);
 	DamageSphere->SetCollisionProfileName(TEXT("DamageSphere"));
 
+	DamageSphere->OnComponentBeginOverlap.AddDynamic(this, &ABossSphere::OnDamageSphereBeginOverlap);
+
 	SphereMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMeshComponent"));
 	SphereMeshComponent->SetupAttachment(GetRootComponent());
+
+	LaunchForce = 4000.f;
 
 	HPStatus = EBossSphereStatus::BSS_Max;
 	MoveStatus = EBossMovementStatus::BMS_Max;
 
 	MaxHP = 500.f;
+
+	CircleDist = 2000.f;
+	CircleSpeed = 1200.f;
+
+	PeakJumpForce = 800.f;
+	PeakNum = -1;
+
+	bPastPlayer = false;
 
 }
 
@@ -32,13 +46,17 @@ ABossSphere::ABossSphere()
 void ABossSphere::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AIController = Cast<AAIController>(GetController());
 	
 	CurHP = MaxHP;
 
 	TTHP = 2.f * MaxHP / 3.f;
 	OTHP = MaxHP / 3.f;
 
-	Player = UGameplayStatics::GetActorOfClass(GetWorld(), AFPSMovement::StaticClass());
+	Player = Cast<AFPSMovement>(UGameplayStatics::GetActorOfClass(GetWorld(), AFPSMovement::StaticClass()));
+
+	ThisCMC = Cast<UCharacterMovementComponent>(GetMovementComponent());
 
 }
 
@@ -48,6 +66,9 @@ void ABossSphere::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TickTime = DeltaTime;
+
+	if (!AIController)
+		return;
 
 	if (CurHP <= MaxHP && CurHP > TTHP)
 	{
@@ -67,6 +88,16 @@ void ABossSphere::Tick(float DeltaTime)
 	}
 
 	//SpinAttractPlayer();
+	//CircleArena();
+
+	/*if (ThisCMC->IsMovingOnGround())
+	{
+		Jump();
+		ThisCMC->JumpZVelocity += 50.f;
+	}*/
+
+	//MoveToRandomPeak();
+	RushToPlayer();
 
 }
 
@@ -80,12 +111,32 @@ void ABossSphere::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ABossSphere::MoveToRandomPeak()
 {
+	if (MoveStatus != EBossMovementStatus::BMS_PeakMove)
+		MoveStatus = EBossMovementStatus::BMS_PeakMove;
 
+	if (PeakNum != -1)
+	{
+		// reached the peak
+		if (!MoveToPointWithSpeed(PeakPositions[PeakNum], PeakSpeed))
+		{
+			ThisCMC->JumpZVelocity = PeakJumpForce;
+			Jump();
+			PeakNum = -1;
+			MoveStatus = EBossMovementStatus::BMS_PlayerMove;
+		}
+		return;
+	}
+
+	PeakNum = FMath::RandRange(0, PeakPositions.Num()-1);
+	UE_LOG(LogTemp, Warning, TEXT("PeakNum = %d"), PeakNum);
 }
 
 void ABossSphere::RushToPlayer()
 {
+	if (MoveStatus != EBossMovementStatus::BMS_PlayerMove)
+		MoveStatus = EBossMovementStatus::BMS_PlayerMove;
 
+	MoveToPlayerWithSpeed(ToPlayerSpeed);
 }
 
 void ABossSphere::CircleArena()
@@ -96,15 +147,106 @@ void ABossSphere::CircleArena()
 		bClockwise = FMath::RandBool();
 	}
 
-	
+	if (!PointOnCircle.IsNearlyZero() && MoveToPointWithSpeed(PointOnCircle, CircleSpeed))
+	{
+		return;
+	}
+
+	float SinCoord = 0.f, CosCoord = 0.f;
+	FMath::SinCos(&SinCoord, &CosCoord, TargetAngle * PI / 180.f);
+	PointOnCircle = FVector(SinCoord, CosCoord, 0.f) * CircleDist;
+	PointOnCircle.Z = 300.f;
+	TargetAngle += 180.f / 4.f * (bClockwise ? -1.f : 1.f);
 }
 
 void ABossSphere::SpinAttractPlayer()
 {
+	if (MoveStatus != EBossMovementStatus::BMS_SpinAttract)
+		MoveStatus = EBossMovementStatus::BMS_SpinAttract;
+
 	if (!Player)
 		return;
 
-	FVector AttractionLocation = Player->GetActorLocation() * 0.994f;
+	FVector PLLoc = Player->GetActorLocation();
+	FVector AttractionLocation = PLLoc - (PLLoc - GetActorLocation()) * 0.004f;
 	Player->SetActorLocation(AttractionLocation);
+
+	SphereMeshComponent->AddLocalRotation(FRotator(0.f, 1.f, 0.f));
+}
+
+
+void ABossSphere::OnDamageSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Overlapping with Actor"));
+	if (OtherActor && Player == Cast<AFPSMovement>(OtherActor))
+	{
+		FVector LaunchVector = Player->GetActorLocation() - GetActorLocation();
+		LaunchVector.Normalize();
+		LaunchVector.Z *= -1.f;
+
+		UE_LOG(LogTemp, Warning, TEXT("Launch in the direction: %f, %f, %f"), LaunchVector.X, LaunchVector.Y, LaunchVector.Z);
+
+		Player->GetDamaged(10.f, LaunchVector * LaunchForce);
+	}
+}
+
+
+
+bool ABossSphere::MoveToPointWithSpeed(FVector Point, float Speed)
+{
+	if (ThisCMC)
+		ThisCMC->MaxWalkSpeed = Speed;
+
+	if (FVector::Dist2D(GetActorLocation(), Point) < 510.f)
+		return false;
+
+	FAIMoveRequest AIMoveReq(Point);
+	AIMoveReq.SetAllowPartialPath(true);
+	AIController->MoveTo(AIMoveReq);
+
+	return true;
+}
+
+bool ABossSphere::MoveToPlayerWithSpeed(float Speed)
+{
+	if (ThisCMC)
+		ThisCMC->MaxWalkSpeed = Speed;
+
+	if(bPastPlayer)
+	{
+		if (ToPlayer.IsNearlyZero())
+		{
+			ToPlayer = GetActorLocation() + (Player->GetActorLocation() - GetActorLocation()) * 2.f;
+			ToPlayer.Z = 0.f;
+
+			if (ToPlayer.Size() > 1500.f)
+			{
+				ToPlayer.Normalize();
+				ToPlayer *= 1500.f;
+			}
+
+			ToPlayer.Z = 150.f;
+		}
+
+		bool bResult = MoveToPointWithSpeed(ToPlayer, Speed);
+		if (!bResult)
+		{
+			ToPlayer = FVector::ZeroVector;
+			MoveStatus = EBossMovementStatus::BMS_Max;
+			bPastPlayer = false;
+		}
+		return bResult;
+	}
+
+	if (FVector::Dist2D(GetActorLocation(), Player->GetActorLocation()) < 800.f)
+	{
+		bPastPlayer = true;
+		return true;
+	}
+
+	FAIMoveRequest AIMoveReq(Player);
+	AIController->MoveTo(AIMoveReq);
+
+	return true;
 }
 

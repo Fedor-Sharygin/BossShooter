@@ -2,7 +2,7 @@
 
 
 #include "FPSMovement.h"
-#include "FPSMovemementComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 
 // Sets default values
@@ -22,10 +22,12 @@ AFPSMovement::AFPSMovement()
 	CurStamina = MaxDashStamina = 200.f;
 	StaminaPerDash = 100.0f;
 	StaminaRecoveryPerSecond = 40.f;
-	DashAirForce = 600.f;
+	DashAirForce = 900.f;
 	DashGroundForce = 1500.f;
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+	CurInvulnerabilityTime = InvulnerabilityTime = 2.f;
 
 }
 
@@ -50,7 +52,12 @@ void AFPSMovement::Tick(float DeltaTime)
 	{
 		CurStamina = FMath::Clamp(CurStamina + DeltaTime * StaminaRecoveryPerSecond, 0.f, MaxDashStamina);
 	}
+	ExpectedMoveDirection = FVector::ZeroVector;
 
+	if (CurInvulnerabilityTime < InvulnerabilityTime)
+	{
+		CurInvulnerabilityTime += DeltaTime;
+	}
 }
 
 // Called to bind functionality to input
@@ -70,9 +77,23 @@ void AFPSMovement::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 }
 
 
+void AFPSMovement::GetDamaged(float Damage, FVector ThrowForce)
+{
+	/** add damage to health later*/
+
+	if (CurInvulnerabilityTime >= InvulnerabilityTime && !ThrowForce.IsNearlyZero())
+	{
+		LaunchCharacter(ThrowForce, true, false);
+		CurInvulnerabilityTime = 0.f;
+	}
+}
+
+
+
 void AFPSMovement::MoveForward(float Value)
 {
 	FVector Forward = GetActorForwardVector();
+	ExpectedMoveDirection += Forward;
 	if (Controller != nullptr && Value != 0.f)
 	{
 		AddMovementInput(Value * Forward);
@@ -82,6 +103,7 @@ void AFPSMovement::MoveForward(float Value)
 void AFPSMovement::MoveRight(float Value)
 {
 	FVector Right = GetActorRightVector();
+	ExpectedMoveDirection += Right;
 	if (Controller != nullptr && Value != 0.f)
 	{
 		AddMovementInput(Value * Right);
@@ -118,7 +140,7 @@ void AFPSMovement::DashAction()
 		DashForce = DashGroundForce;
 	}
 	
-	FVector DashDir = GetVelocity();
+	FVector DashDir = GetMovementComponent()->GetLastInputVector();
 	if (DashDir.IsNearlyZero())
 		DashDir = GetActorForwardVector();
 	DashDir.Normalize();

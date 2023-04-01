@@ -64,8 +64,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DashAction")
 	float DashAirForce;
 
+
+	// get damaged for Damage amount and be thrown with ThrowForce
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damaged")
+	bool bLaunched;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damaged")
+	float InvulnerabilityTime;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damaged")
+	float CurInvulnerabilityTime;
+	UFUNCTION()
+	void GetDamaged(float Damage, FVector ThrowForce = FVector::ZeroVector);
+
+
 private:
 
+	FVector ExpectedMoveDirection;
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 
