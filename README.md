@@ -6,3 +6,6 @@ UE4 project - FPS shooter with 3 different levels and bosses.
 
 **_03/29/2023_**
 > Started Boss Sphere C++ based behavior class. Started immigrating FPS movement to C++ for ease of use
+
+**_03/31/2023_**
+> Boss Sphere movement behaviors are set. Started working on custom AIBossSphereController to allow Behavior Tree use
