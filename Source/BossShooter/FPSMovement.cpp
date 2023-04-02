@@ -27,7 +27,7 @@ AFPSMovement::AFPSMovement()
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
-	CurInvulnerabilityTime = InvulnerabilityTime = 2.f;
+	CurInvulnerabilityTime = InvulnerabilityTime = .7f;
 
 }
 

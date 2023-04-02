@@ -63,24 +63,12 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI | Behavior")
 	class AFPSMovement* Player;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float PeakSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float ToPlayerSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float SpinSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float CircleDist;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float CircleSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
-	float PeakJumpForce;
-
-
 	// Attacking
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	class AAIController* AIController;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	class UBehaviorTree* MainBT;
 
 private:
 	float TTHP, OTHP; // two thirds and one third hp respectively for behavior evaluation
@@ -111,35 +99,62 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Attack")
 	float LaunchForce;
 
-private:
-
-	UCharacterMovementComponent* ThisCMC;
-	float TickTime;
-
-	bool MoveToPointWithSpeed(FVector Point, float Speed);
-	bool MoveToPlayerWithSpeed(float Speed);
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Behavior | MovementVariables")
+	bool bReachedDest;
+	
 	// attacking behavior
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float PeakSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float PeakJumpForce;
 	UPROPERTY(VisibleInstanceOnly, Category = "AI | Behavior | MovementVariables")
 	int PeakNum;
+	UFUNCTION(BlueprintCallable, Category = "AI | Movement")
 	void MoveToRandomPeak();
+
 
 	UPROPERTY(VisibleInstanceOnly, Category = "AI | Behavior | MovementVariables")
 	FVector ToPlayer;
 	UPROPERTY(VisibleInstanceOnly, Category = "AI | Behavior | MovementVariables")
 	bool bPastPlayer;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float ToPlayerSpeed;
+	UFUNCTION(BlueprintCallable, Category = "AI | Movement")
 	void RushToPlayer();
 
 
-	bool bClockwise;
 	UPROPERTY(VisibleInstanceOnly, Category = "AI | Behavior | MovementVariables")
 	float TargetAngle;
 	UPROPERTY(VisibleInstanceOnly, Category = "AI | Behavior | MovementVariables")
 	FVector PointOnCircle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float CircleDist;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float CircleSpeed;
+	UFUNCTION(BlueprintCallable, Category = "AI | Movement")
 	void CircleArena();
 
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float SpinSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior | MovementVariables")
+	float AttractionForce;
+	UFUNCTION(BlueprintCallable, Category = "AI | Movement")
 	void SpinAttractPlayer();
+
+	/*UFUNCTION(BlueprintCallable, Category = "AI | Movement")
+	void SetMovementStatus(EBossMovementStatus Status);*/
+
+private:
+
+	UCharacterMovementComponent* ThisCMC;
+	float TickTime;
+
+	bool bClockwise;
+
+	bool MoveToPointWithSpeed(FVector Point, float Speed);
+	bool MoveToPlayerWithSpeed(float Speed);
+
 
 
 };

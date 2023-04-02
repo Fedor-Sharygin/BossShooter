@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "AIBossSphereController.h"
+#include "BehaviorTree/BehaviorTree.h"
 
 // Sets default values
 ABossSphere::ABossSphere()
@@ -58,6 +60,8 @@ void ABossSphere::BeginPlay()
 
 	ThisCMC = Cast<UCharacterMovementComponent>(GetMovementComponent());
 
+	bReachedDest = false;
+
 }
 
 // Called every frame
@@ -97,7 +101,7 @@ void ABossSphere::Tick(float DeltaTime)
 	}*/
 
 	//MoveToRandomPeak();
-	RushToPlayer();
+	//RushToPlayer();
 
 }
 
@@ -111,14 +115,16 @@ void ABossSphere::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ABossSphere::MoveToRandomPeak()
 {
-	if (MoveStatus != EBossMovementStatus::BMS_PeakMove)
-		MoveStatus = EBossMovementStatus::BMS_PeakMove;
+	//if (MoveStatus != EBossMovementStatus::BMS_PeakMove)
+		//MoveStatus = EBossMovementStatus::BMS_PeakMove;
 
+	bReachedDest = false;
 	if (PeakNum != -1)
 	{
 		// reached the peak
 		if (!MoveToPointWithSpeed(PeakPositions[PeakNum], PeakSpeed))
 		{
+			bReachedDest = true;
 			ThisCMC->JumpZVelocity = PeakJumpForce;
 			Jump();
 			PeakNum = -1;
@@ -133,22 +139,34 @@ void ABossSphere::MoveToRandomPeak()
 
 void ABossSphere::RushToPlayer()
 {
-	if (MoveStatus != EBossMovementStatus::BMS_PlayerMove)
-		MoveStatus = EBossMovementStatus::BMS_PlayerMove;
+	//if (MoveStatus != EBossMovementStatus::BMS_PlayerMove)
+		//MoveStatus = EBossMovementStatus::BMS_PlayerMove;
 
+	bReachedDest = false;
 	MoveToPlayerWithSpeed(ToPlayerSpeed);
 }
 
+/*void ABossSphere::SetMovementStatus(EBossMovementStatus Status)
+{
+	SetBossMovementStatus(Status);
+	if (Status == EBossMovementStatus::BMS_CircleArena)
+	{
+		bClockwise = FMath::RandBool();
+	}
+}*/
+
 void ABossSphere::CircleArena()
 {
-	if (MoveStatus != EBossMovementStatus::BMS_CircleArena)
+	/*if (MoveStatus != EBossMovementStatus::BMS_CircleArena)
 	{
 		MoveStatus = EBossMovementStatus::BMS_CircleArena;
 		bClockwise = FMath::RandBool();
-	}
+	}*/
 
+	bReachedDest = false;
 	if (!PointOnCircle.IsNearlyZero() && MoveToPointWithSpeed(PointOnCircle, CircleSpeed))
 	{
+		bReachedDest = true;
 		return;
 	}
 
@@ -161,17 +179,17 @@ void ABossSphere::CircleArena()
 
 void ABossSphere::SpinAttractPlayer()
 {
-	if (MoveStatus != EBossMovementStatus::BMS_SpinAttract)
-		MoveStatus = EBossMovementStatus::BMS_SpinAttract;
+	//if (MoveStatus != EBossMovementStatus::BMS_SpinAttract)
+		//MoveStatus = EBossMovementStatus::BMS_SpinAttract;
 
 	if (!Player)
 		return;
 
 	FVector PLLoc = Player->GetActorLocation();
-	FVector AttractionLocation = PLLoc - (PLLoc - GetActorLocation()) * 0.004f;
+	FVector AttractionLocation = PLLoc - (PLLoc - GetActorLocation()) * (1 - AttractionForce);
 	Player->SetActorLocation(AttractionLocation);
 
-	SphereMeshComponent->AddLocalRotation(FRotator(0.f, 1.f, 0.f));
+	SphereMeshComponent->AddLocalRotation(FRotator(0.f, SpinSpeed * TickTime, 0.f));
 }
 
 
@@ -231,6 +249,7 @@ bool ABossSphere::MoveToPlayerWithSpeed(float Speed)
 		bool bResult = MoveToPointWithSpeed(ToPlayer, Speed);
 		if (!bResult)
 		{
+			bReachedDest = true;
 			ToPlayer = FVector::ZeroVector;
 			MoveStatus = EBossMovementStatus::BMS_Max;
 			bPastPlayer = false;
