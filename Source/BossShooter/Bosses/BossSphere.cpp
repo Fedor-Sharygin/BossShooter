@@ -59,6 +59,8 @@ void ABossSphere::BeginPlay()
 	Player = Cast<AFPSMovement>(UGameplayStatics::GetActorOfClass(GetWorld(), AFPSMovement::StaticClass()));
 
 	ThisCMC = Cast<UCharacterMovementComponent>(GetMovementComponent());
+	//ThisCMC->bOrientRotationToMovement = false;
+	//ThisCMC->RotationRate = FRotator(0.f, 15.f, 0.f);
 
 	bReachedDest = false;
 

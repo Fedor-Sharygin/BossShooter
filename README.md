@@ -12,3 +12,6 @@ UE4 project - FPS shooter with 3 different levels and bosses.
 
 **_04/01/2023_**
 > AIBossSphereController implemented and Full HP behavior defined.
+
+**_04/06/2023_**
+> Added texture and materials for Sphere Boss and Floor, and let the Sphere Boss to freely rotate independently from Movement Component
