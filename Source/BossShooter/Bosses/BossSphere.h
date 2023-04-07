@@ -45,10 +45,9 @@ public:
 	EBossSphereStatus HPStatus;
 	FORCEINLINE void SetBossSphereStatus(EBossSphereStatus _HPStatus) { HPStatus = _HPStatus; }
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI | Behavior")
+	UPROPERTY(EditInstanceOnly, Category = "AI | Behavior")
 	float MaxHP;
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AI | Behavior")
-	float CurHP;
+	class UBossHPComponent* HPComponent;
 
 	// Movement Status
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Behavior")

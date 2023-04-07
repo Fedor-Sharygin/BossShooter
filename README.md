@@ -15,3 +15,4 @@ UE4 project - FPS shooter with 3 different levels and bosses.
 
 **_04/06/2023_**
 > Added texture and materials for Sphere Boss and Floor, and let the Sphere Boss to freely rotate independently from Movement Component
+> Started work on Gun Components to be used in Gun Actors. Added Boss HP component, so when creating future bosses, no new additions to gun behaviors would need to be added

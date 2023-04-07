@@ -2,6 +2,7 @@
 
 
 #include "BossSphere.h"
+#include "BossHPComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "../FPSMovement.h"
@@ -42,6 +43,8 @@ ABossSphere::ABossSphere()
 
 	bPastPlayer = false;
 
+	HPComponent = CreateDefaultSubobject<UBossHPComponent>(TEXT("HP Component"));
+	HPComponent->MaxHP = MaxHP;
 }
 
 // Called when the game starts or when spawned
@@ -50,8 +53,6 @@ void ABossSphere::BeginPlay()
 	Super::BeginPlay();
 
 	AIController = Cast<AAIController>(GetController());
-	
-	CurHP = MaxHP;
 
 	TTHP = 2.f * MaxHP / 3.f;
 	OTHP = MaxHP / 3.f;
@@ -76,15 +77,15 @@ void ABossSphere::Tick(float DeltaTime)
 	if (!AIController)
 		return;
 
-	if (CurHP <= MaxHP && CurHP > TTHP)
+	if (HPComponent->CurHP <= HPComponent->MaxHP && HPComponent->CurHP > TTHP)
 	{
 		HPStatus = EBossSphereStatus::BSS_FullHP;
 	}
-	else if (CurHP <= TTHP && CurHP > OTHP)
+	else if (HPComponent->CurHP <= TTHP && HPComponent->CurHP > OTHP)
 	{
 		HPStatus = EBossSphereStatus::BSS_MedHP;
 	}
-	else if (CurHP <= OTHP && CurHP > 0.f)
+	else if (HPComponent->CurHP <= OTHP && HPComponent->CurHP > 0.f)
 	{
 		HPStatus = EBossSphereStatus::BSS_LowHP;
 	}
