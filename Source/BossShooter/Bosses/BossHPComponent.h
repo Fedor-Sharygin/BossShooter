@@ -27,6 +27,7 @@ public:
 	UPROPERTY(EditInstanceOnly, Category = "Boss HP")
 	float CurHP;
 	
+	UFUNCTION(BlueprintCallable)
 	void GetDamaged(float Damage);
 
 };

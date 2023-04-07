@@ -9,7 +9,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "AIBossSphereController.h"
 #include "BehaviorTree/BehaviorTree.h"
 
 // Sets default values

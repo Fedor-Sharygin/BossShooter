@@ -18,6 +18,10 @@ UGunComponent()
 
 void ULauncherComponent::Shoot()
 {
+	// do not shoot unless off cooldown
+	if (CooldownTimeLeft < CooldownTime)
+		return;
+
 
 }
 

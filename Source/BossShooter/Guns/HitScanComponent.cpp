@@ -22,6 +22,10 @@ UGunComponent()
 
 void UHitScanComponent::Shoot()
 {
+	// do not shoot unless off cooldown
+	if (CooldownTimeLeft < CooldownTime)
+		return;
+
 	FVector CameraDirection = ParentCamera->GetForwardVector();
 	FVector MuzzleOrigin = ParentCamera->GetComponentLocation() + CameraDirection * MuzzleOffset;
 	for (int i = 0; i < UnitsPerShot; ++i)
@@ -50,7 +54,12 @@ void UHitScanComponent::Hitscan(FVector Origin, FVector RangeEnd)
 
 	if (bResult && HitObject)
 	{
+		TArray<UBossHPComponent*> HPCompStorage;
+		HitObject->GetComponents(HPCompStorage);
 
+		// each boss actor is supposed to have only
+		// a single Boss HP Component
+		HPCompStorage[0]->GetDamaged(DamagePerUnit);
 	}
 }
 
